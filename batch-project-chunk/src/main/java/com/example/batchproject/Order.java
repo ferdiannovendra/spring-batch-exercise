@@ -77,4 +77,10 @@ public class Order {
     public void setShipDate(Date shipDate) {
         this.shipDate = shipDate;
     }
+
+    @Override
+    public String toString() {
+        return "Order [orderId=" + orderId + ", firstName=" + firstName + ", lastName=" + lastName + ", email=" + email
+                + ", cost=" + cost + ", itemId=" + itemId + ", itemName=" + itemName + ", shipDate=" + shipDate + "]";
+    }
 }

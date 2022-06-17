@@ -15,6 +15,7 @@ public class OrderRowMapper implements org.springframework.jdbc.core.RowMapper<O
         order.setItemId(rs.getString("item_id"));
         order.setItemName(rs.getString("item_name"));
         order.setShipDate(rs.getDate("ship_date"));
+        order.toString();
         return order;
     }
 }

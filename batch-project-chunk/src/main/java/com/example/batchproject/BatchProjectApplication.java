@@ -19,6 +19,7 @@ import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.JdbcPagingItemReader;
 import org.springframework.batch.item.database.PagingQueryProvider;
+import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
 import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
 import org.springframework.batch.item.database.builder.JdbcPagingItemReaderBuilder;
 import org.springframework.batch.item.database.support.SqlPagingQueryProviderFactoryBean;
@@ -28,6 +29,8 @@ import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
 import org.springframework.batch.item.file.transform.DelimitedLineAggregator;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
+import org.springframework.batch.item.json.JacksonJsonObjectMarshaller;
+import org.springframework.batch.item.json.builder.JsonFileItemWriterBuilder;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -50,6 +53,9 @@ public class BatchProjectApplication {
 
 	public static String ORDER_SQL = "select order_id, first_name, last_name, email, cost, item_id, item_name, ship_date "
 			+ "from SHIPPED_ORDER order by order_id";
+	public static String INSERT_ORDER_SQL = "insert into "
+			+ "shipped_order_output(order_id, first_name, last_name, email, cost, item_id, item_name, ship_date)"
+			+ " values(:orderId,:firstName,:lastName,:email,:cost,:itemId,:itemName,:shipDate)";
 	@Autowired
 	public JobBuilderFactory jobBuilderFactory;
 
@@ -61,21 +67,13 @@ public class BatchProjectApplication {
 
 	@Bean
 	public ItemWriter<Order> itemWriter() {
-		FlatFileItemWriter<Order> itemWriter = new FlatFileItemWriter<Order>();
-
-//		FileSystemResource classPathResource =
-
-		itemWriter.setResource(new FileSystemResource("/data/shipped_orders_output.csv"));
-		DelimitedLineAggregator<Order> aggregator = new DelimitedLineAggregator<Order>();
-		aggregator.setDelimiter(",");
-
-		BeanWrapperFieldExtractor<Order> fieldExtractor = new BeanWrapperFieldExtractor<Order>();
-		fieldExtractor.setNames(names);
-
-		aggregator.setFieldExtractor(fieldExtractor);
-
-		itemWriter.setLineAggregator(aggregator);
-		return itemWriter;
+		FileSystemResource fileSystemResource = new FileSystemResource("/data/shipped_order_output.json");
+		System.out.println(fileSystemResource);
+		return new JsonFileItemWriterBuilder<Order>()
+				.jsonObjectMarshaller(new JacksonJsonObjectMarshaller<Order>())
+				.resource(fileSystemResource)
+				.name("jsonItemWriter")
+				.build();
 	}
 
 	@Bean
@@ -141,7 +139,8 @@ public class BatchProjectApplication {
 		return this.stepBuilderFactory.get("chunkBasedStep")
 				.<Order, Order>chunk(10)
 				.reader(itemReader())
-				.writer(itemWriter()).build();
+				.writer(itemWriter())
+				.build();
 	}
 
 
